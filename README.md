@@ -1,5 +1,9 @@
 # Code for "Learning Homogeneous Restless Bandits with Accurate Finite-Population Planning"
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24409930.svg)](https://doi.org/10.5281/zenodo.24409930)
+
+Archived version: https://doi.org/10.5281/zenodo.24409930 (v1.0.0).
+
 Every number in Section 8 and Appendix D of the paper is produced by the scripts below. All values are exact
 finite-population expectations computed by binomial convolution, except the learners' own randomness, which is
 averaged over 20 runs with seeds 1000*N + s, s = 0..19.
