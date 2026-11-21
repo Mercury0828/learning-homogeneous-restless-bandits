@@ -1,0 +1,4 @@
+command: python online_regret.py 800 2000 20 mpmp
+truth placement: mpmp -> theta = [0.17500000000000002, 0.925, 0.6749999999999999, 0.275]
+seeds: 1000*N + s for s in 0..19; planner order ['exact', 'gaussian', 'fluid']
+python 3.11.4 numpy 2.2.6 scipy 1.17.1 matplotlib 3.10.8
