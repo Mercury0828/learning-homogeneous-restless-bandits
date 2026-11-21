@@ -1,4 +1,5 @@
 command: python online_regret.py 50 2000 20 pppp
 truth placement: pppp -> theta = [0.225, 0.925, 0.725, 0.275]
 seeds: 1000*N + s for s in 0..19; planner order ['exact', 'gaussian', 'fluid']
+gaussian selection: upper corner; episodes where the 16-vertex rule picks another vertex: 0 of 40000
 python 3.11.4 numpy 2.2.6 scipy 1.17.1 matplotlib 3.10.8

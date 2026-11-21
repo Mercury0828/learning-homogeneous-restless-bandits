@@ -11,10 +11,12 @@ learner selects a kernel with maximal planner value over this box and plays the 
   * exact planner: W^N_Q is nondecreasing in each coordinate of theta (the next state-0 count increases
     stochastically, and E min{S, B_N} is nondecreasing), so the upper corner attains the supremum exactly;
   * fluid re-solve planner: F^{alpha_N}_Q is nondecreasing in each coordinate, so the upper corner is exact;
-  * Gaussian planner (numerical variant): the projected Gaussian objective is evaluated at each of the 16 box
-    vertices on a 401-point grid in u, the vertex with the largest grid value is selected, and its action is refined
-    by bounded scalar minimization between the neighbouring grid points before rounding. This procedure has no
-    certified selection tolerance.
+  * Gaussian planner: the Gaussian score (the maximum over u of the projected frozen-covariance objective) is
+    nondecreasing in each coordinate of theta on the class box for N in {200, 800} (Appendix D, Lemma `lem:gaussmono`), so
+    the upper corner attains the supremum exactly. Its action maximizes the objective on a 401-point grid in u,
+    refined by bounded scalar minimization between the neighbouring grid points, before rounding. As a check, every
+    episode with a nonempty intersection also evaluates the earlier rule (best of the 16 box vertices by grid value)
+    and counts disagreements with the upper corner; the count is written to the _meta.txt record.
 Only the four stage-0 rows are tracked: terminal rows do not affect any planner, so their confidence intervals are
 omitted (D_row = 2Hd = 8 is kept in the logarithm), and the terminal-row part of the empty-intersection test is not
 simulated. An empty intersection falls back to the class center.
@@ -133,6 +135,9 @@ def gauss_action(N, B, th):
     return round_active(N, B, float(res.x))
 
 
+VERTEX_DIFF = [0]   # episodes in which the 16-vertex rule would not pick the upper corner (Gaussian learner)
+
+
 def run(N, T, seed, planners, truth_vals):
     rng = np.random.default_rng(seed)
     B = N // 2
@@ -157,12 +162,15 @@ def run(N, T, seed, planners, truth_vals):
             elif planner in ("exact", "fluid"):
                 theta = hi
             else:
-                best_val, theta = -1.0, None
+                theta = hi
+                best_val, best_th = -1.0, None
                 for corner in itertools.product(*zip(lo, hi)):
                     th = np.array(corner)
                     val, _ = gauss_grid_value(N, B, th)
                     if val > best_val:
-                        best_val, theta = val, th
+                        best_val, best_th = val, th
+                if not np.array_equal(best_th, hi):
+                    VERTEX_DIFF[0] += 1
             if planner == "exact":
                 c0 = exact_action(N, B, theta)
             elif planner == "fluid":
@@ -228,6 +236,8 @@ def main():
         if code:
             f.write(f"truth placement: {code} -> theta = {TRUTH.tolist()}\n")
         f.write(f"seeds: 1000*N + s for s in 0..{seeds - 1}; planner order {planners}\n")
+        f.write(f"gaussian selection: upper corner; episodes where the 16-vertex rule picks another vertex: "
+                f"{VERTEX_DIFF[0]} of {seeds * T}\n")
         f.write(f"python {platform.python_version()} numpy {np.__version__} scipy {scipy.__version__} "
                 f"matplotlib {matplotlib.__version__}\n")
 

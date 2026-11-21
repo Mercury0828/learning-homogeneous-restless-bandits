@@ -1,6 +1,6 @@
 """Figure 1 of the paper: online per-arm regret over long
-horizons. Panel (a): mean cumulative regret against episodes at the primary placement (mppm), exact vs fluid
-learner, N = 200 and 800. Panel (b): every one of the 16 placements at T, exact (x) against fluid (y), with the
+horizons. Panel (a): mean cumulative regret against episodes at the primary placement (mppm), exact, Gaussian and fluid
+learners, N = 200 and 800. Panel (b): every one of the 16 placements at T, exact (x) against fluid (y), with the
 diagonal; a point above the diagonal is a placement where the exact learner has the smaller regret.
 
 Encoding: planner = colour AND line style (exact solid, fluid dashed; panel (b) uses the axes), N = marker shape
@@ -26,8 +26,9 @@ OUTDIR = sys.argv[2] if len(sys.argv) > 2 else D
 PRIMARY = "mppm"
 POPS = [200, 800]
 CODES = ["".join(c) for c in itertools.product("pm", repeat=4)]
-COL = {"exact": "#2a78d6", "fluid": "#eb6834"}
-LS = {"exact": "-", "fluid": "--"}
+COL = {"exact": "#2a78d6", "fluid": "#eb6834", "gaussian": "#1baf7a"}   # validated categorical slots 1-3 (dataviz palette)
+LS = {"exact": "-", "fluid": "--", "gaussian": "-."}
+LW = {"exact": 1.4, "fluid": 1.4, "gaussian": 1.0}
 MK = {200: "o", 800: "^"}
 FILL = {200: "white", 800: None}                         # N = 200 hollow, N = 800 filled
 FIGW, FIGH, FONT = 6.5, 2.75, 9.0
@@ -60,11 +61,11 @@ for N in POPS:
     if d is None:
         missing.append((PRIMARY, N))
         continue
-    for p in ("exact", "fluid"):
+    for p in ("exact", "fluid", "gaussian"):
         ts, ms, _ = zip(*d[p])
         lo, hi = min(lo, min(ms)), max(hi, max(ms))
-        ax1.plot(ts, ms, ls=LS[p], lw=1.4, color=COL[p], marker=MK[N], ms=4.2, markeredgewidth=0.9,
-                 markerfacecolor=FILL[N] or COL[p], zorder=3)
+        ax1.plot(ts, ms, ls=LS[p], lw=LW[p], color=COL[p], marker=MK[N], ms=4.2 if p != "gaussian" else 3.2,
+                 markeredgewidth=0.9, markerfacecolor=FILL[N] or COL[p], zorder=4 if p == "gaussian" else 3)
 # reference slopes 1/2 (statistical term, sqrt(T)) and 1 (accumulated planning error, linear in T), anchored at the
 # last checkpoint of the N = 800 exact and fluid curves; thin grey so they read as guides, labelled at the right end
 ref = load(PRIMARY, 800)
@@ -94,6 +95,7 @@ ax1.set_title("(a) one true kernel", fontsize=FONT, loc="left")
 
 # (b) all placements at T
 pts = {N: [] for N in POPS}
+gpts = {N: [] for N in POPS}
 for N in POPS:
     for c in CODES:
         d = load(c, N)
@@ -105,16 +107,18 @@ for N in POPS:
         fl = dict((t, m) for t, m, _ in d["fluid"])
         gauss_dev = max(gauss_dev, max(abs(g[t] - e[t]) / e[t] for t in e if e[t] > 0))
         pts[N].append((e[T], fl[T]))
-allv = [v for N in POPS for xy in pts[N] for v in xy]
+        gpts[N].append((e[T], g[T]))
+allv = [v for N in POPS for xy in pts[N] + gpts[N] for v in xy]
 if allv:
     vlo, vhi = min(allv) / 1.3, max(allv) * 1.3
     ax2.plot([vlo, vhi], [vlo, vhi], color="#8a8a82", lw=0.8, ls=":", zorder=1)
     ax2.text(vhi / 1.15, vhi / 4.0, "equal", ha="right", va="top", color="#55554f", fontsize=FONT - 1)
     for N in POPS:
-        if pts[N]:
-            xs, ys = zip(*pts[N])
-            ax2.scatter(xs, ys, marker=MK[N], s=26, facecolors=FILL[N] or "#33332f", edgecolors="#33332f",
-                        linewidths=0.9, zorder=3)
+        for q, P in (("fluid", pts[N]), ("gaussian", gpts[N])):
+            if P:
+                xs, ys = zip(*P)
+                ax2.scatter(xs, ys, marker=MK[N], s=26 if q == "fluid" else 20, facecolors=FILL[N] or COL[q],
+                            edgecolors=COL[q], linewidths=0.9, zorder=3)
     ax2.set_xscale("log")
     ax2.set_yscale("log")
     ax2.set_xlim(vlo, vhi)
@@ -125,8 +129,8 @@ if allv:
         a.set_major_formatter(FixedFormatter([f"{v:g}" for v in tk]))
         a.set_minor_locator(NullLocator())
 TSTR = f"{T:,}".replace(",", " ")
-ax2.set_xlabel(f"exact learner at T = {TSTR}")
-ax2.set_ylabel(f"fluid learner at T = {TSTR}")
+ax2.set_xlabel(f"exact, T = {TSTR}")
+ax2.set_ylabel(f"fluid or Gaussian, T = {TSTR}")
 ax2.set_title("(b) all 16 true kernels", fontsize=FONT, loc="left")
 ax2.set_aspect("equal", adjustable="box")
 for ax in (ax1, ax2):
@@ -134,10 +138,11 @@ for ax in (ax1, ax2):
     ax.spines["right"].set_visible(False)
 
 handles = [Line2D([], [], color=COL["exact"], ls="-", lw=1.4, label="exact learner"),
+           Line2D([], [], color=COL["gaussian"], ls="-.", lw=1.0, label="Gaussian learner"),
            Line2D([], [], color=COL["fluid"], ls="--", lw=1.4, label="fluid learner")]
 handles += [Line2D([], [], color="#33332f", ls="", marker=MK[N], ms=4.6, markeredgewidth=0.9,
                    markerfacecolor=FILL[N] or "#33332f", label=f"N = {N}") for N in POPS]
-fig.legend(handles=handles, loc="upper center", frameon=False, ncol=4, handlelength=2.2, columnspacing=1.4,
+fig.legend(handles=handles, loc="upper center", frameon=False, ncol=5, handlelength=2.2, columnspacing=1.2,
            bbox_to_anchor=(0.5, 1.0))
 fig.tight_layout(pad=0.3, rect=(0, 0, 1, 0.90), w_pad=1.5)
 os.makedirs(OUTDIR, exist_ok=True)

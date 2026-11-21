@@ -1,4 +1,4 @@
-"""Print every number quoted in Section 8 and Appendix D of the paper from the result files.
+"""Print a summary of numerical claims in Section 8 and Appendix D from the result files.
 
 Reads out/transfer_sweep.csv and out/dirsweep/ (summary_T{2000,20000}.csv, diagnosis_T20000.csv,
 lp_priority_check.csv, <kernel>/online_regret_N{N}_T20000.csv) and recomputes the theoretical constants used in
@@ -40,6 +40,11 @@ def learning():
         print(f"  N={N}: exact < fluid on {sum(r > 1 for r in ratio)}/{len(ks)} kernels; fluid/exact ratio "
               f"{min(ratio):.1f} to {max(ratio):.1f}; 95% intervals disjoint on all kernels: {sep}; "
               f"max |gaussian - exact| / exact = {100 * gdev:.3f}%")
+        glow = sum(m[(k, N, "gaussian")][0] < m[(k, N, "exact")][0] for k in ks)
+        gov = sum(abs(m[(k, N, "gaussian")][0] - m[(k, N, "exact")][0]) <= m[(k, N, "gaussian")][1] + m[(k, N, "exact")][1]
+                  for k in ks)
+        print(f"  N={N}: gaussian mean below exact on {glow}/{len(ks)} kernels; gaussian and exact 95% intervals "
+              f"overlap on {gov}/{len(ks)}")
     d = rows(os.path.join(D, "diagnosis_T20000.csv"))
     print("== Late window, episodes 12801-20000 (out/dirsweep/diagnosis_T20000.csv, built with "
           "'python diagnose_dirsweep.py 20000 12800')")

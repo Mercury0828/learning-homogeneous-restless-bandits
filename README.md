@@ -1,10 +1,10 @@
 # Code for "Learning Homogeneous Restless Bandits with Accurate Finite-Population Planning"
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24409930.svg)](https://doi.org/10.5281/zenodo.24409930)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24409929.svg)](https://doi.org/10.5281/zenodo.24409929)
 
-Archived version: https://doi.org/10.5281/zenodo.24409930 (v1.0.0).
+Archived versions: https://doi.org/10.5281/zenodo.24409929 (always resolves to the latest version; v1.0.0 is https://doi.org/10.5281/zenodo.24409930).
 
-Every number in Section 8 and Appendix D of the paper is produced by the scripts below. All values are exact
+The scripts below reproduce the numerical experiments in Section 8 and Appendix D. All values are exact
 finite-population expectations computed by binomial convolution, except the learners' own randomness, which is
 averaged over 20 runs with seeds 1000*N + s, s = 0..19.
 
@@ -21,7 +21,7 @@ Python 3.10 or later with numpy, scipy and matplotlib (see requirements.txt).
 | Late-window losses versus the known-kernel gap | `python diagnose_dirsweep.py 20000 12800` | `out/dirsweep/diagnosis_T{T}.csv` |
 | Figure 1 | `python make_fig_dirsweep.py 20000 out` | `out/online_regret_long.pdf` |
 | Priority-rule losses (Appendix D) | `python lp_priority_check.py` | `out/dirsweep/lp_priority_check.csv` |
-| **Every number quoted in Section 8 and Appendix D** (ratios, interval separation, late-window fractions, crossover checkpoints, T = 2000 counts, Gaussian differences, priority-rule bounds and exceptions, N_G, L_tr rho, kappa_G eps_tube) | `python report_claims.py` | printed, with source file and formula per line |
+| **Numerical claim summary for Section 8 and Appendix D** (ratios, interval separation, late-window fractions, crossover checkpoints, T = 2000 counts, Gaussian differences and counts, priority-rule bounds and exceptions, N_G, L_tr rho, kappa_G eps_tube) | `python report_claims.py` | printed, with source file and formula per line |
 
 A kernel is coded by four letters p/m: the true kernel is theta_Q + v/40 with v_i = +1 for p and -1 for m, where
 theta_Q = (1/5, 9/10, 7/10, 1/4) lists the stage-0 probabilities of reaching state 0 from (0,1), (0,0), (1,1), (1,0).
